@@ -1,0 +1,9 @@
+# silsila — robots.txt
+# Allow all well-behaved crawlers; AI crawlers explicitly permitted for now.
+# Update if/when policy changes.
+
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://silsila.example/sitemap.xml

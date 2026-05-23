@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silsila Labs — Building the tools agents actually need</title>
+    <meta name="description" content="Silsila Labs builds infrastructure for AI agents in regulated industries. Extraction pipelines, continuous verification, autonomous trading agents, and developer tools.">
+    <meta property="og:title" content="Silsila Labs — Building the tools agents actually need">
+    <meta property="og:description" content="AI agent infrastructure from Silsila.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://silsila.example/labs">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&family=Reem+Kufi:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest">
+    <meta name="theme-color" content="#C24A1E">
+    <style>
+        :root {
+            --bg: #F7F4EE;
+            --bg-alt: #F0EBE0;
+            --surface: #FFFFFF;
+            --ink: #1A1A1A;
+            --ink-mid: #3A3733;
+            --ink-dim: #5A554C;
+            --ink-faint: #8A8478;
+            --terracotta: #C24A1E;
+            --terracotta-soft: #C24A1E15;
+            --terracotta-dim: #C24A1E80;
+            --brass: #B8935A;
+            --brass-dim: #B8935A60;
+            --rule: #D8D2C5;
+            --rule-faint: #E6E0D3;
+            --status-shipped: #4A7C59;
+            --status-build: #B8935A;
+            --status-spec: #6B7A8F;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        ::selection { background: var(--terracotta); color: var(--bg); }
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--bg);
+            color: var(--ink);
+            font-family: 'Inter', system-ui, sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(184,147,90,0.04) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(194,74,30,0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .container {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 32px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ── NAV ─────────────────────────────────── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 50;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: all 0.3s ease;
+        }
+        nav.scrolled {
+            background: rgba(247,244,238,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--rule-faint);
+        }
+        .nav-brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+        .nav-brand-name { font-family: 'Fraunces', serif; font-weight: 400; font-size: 24px; color: var(--ink); letter-spacing: -0.02em; }
+        .nav-brand-labs { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--terracotta); letter-spacing: 0.15em; text-transform: uppercase; margin-left: 4px; border-left: 1px solid var(--terracotta-dim); padding-left: 12px; }
+        .nav-arabic { font-family: 'Reem Kufi', sans-serif; font-size: 18px; color: var(--terracotta); font-weight: 500; }
+
+        .nav-links { display: flex; gap: 4px; align-items: center; }
+        .nav-links a {
+            color: var(--ink-dim); text-decoration: none; font-size: 12px;
+            letter-spacing: 0.04em; padding: 8px 14px; border: 1px solid transparent;
+            border-radius: 2px; transition: all 0.2s; font-weight: 500;
+        }
+        .nav-links a:hover { color: var(--terracotta); }
+        .nav-links a.home-link { color: var(--ink); border-color: var(--rule); }
+        .nav-links a.home-link:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+        .rule { width: 100%; height: 1px; background: var(--rule); }
+        .rule-accent { width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--terracotta), transparent); }
+
+        .section-label {
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            color: var(--terracotta); margin-bottom: 16px; font-weight: 500;
+        }
+
+        /* ── HERO ────────────────────────────────── */
+        .hero {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            justify-content: center;
+            padding: 140px 32px 80px;
+        }
+
+        .hero-content { max-width: 760px; animation: fadeUp 0.9s ease; }
+
+        .hero-eyebrow {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            color: var(--terracotta);
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .hero-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 300;
+            font-size: 80px;
+            line-height: 1.0;
+            letter-spacing: -0.04em;
+            margin-bottom: 24px;
+        }
+
+        .hero-title em { font-style: italic; font-weight: 400; color: var(--terracotta); }
+
+        .hero-tagline {
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink-mid);
+            margin-bottom: 24px;
+        }
+
+        .hero-desc {
+            color: var(--ink-dim);
+            max-width: 580px;
+            margin: 0 auto;
+            font-size: 16px;
+            line-height: 1.75;
+        }
+
+        /* ── SECTIONS ────────────────────────────── */
+        section { padding: 100px 0; position: relative; }
+        .alt-bg { background: var(--bg-alt); }
+
+        h2 {
+            font-family: 'Fraunces', serif;
+            font-weight: 300;
+            font-size: 44px;
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+            color: var(--ink);
+            margin-bottom: 28px;
+        }
+        h2 em { font-style: italic; font-weight: 400; color: var(--terracotta); }
+
+        .section-text {
+            font-size: 16px;
+            color: var(--ink-dim);
+            max-width: 680px;
+            line-height: 1.8;
+        }
+
+        /* ── PRODUCTS ────────────────────────────── */
+        .products {
+            margin-top: 64px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .product {
+            background: var(--surface);
+            border: 1px solid var(--rule);
+            border-radius: 4px;
+            padding: 40px;
+            display: grid;
+            grid-template-columns: 1fr 280px;
+            gap: 48px;
+            transition: all 0.25s;
+        }
+
+        .product:hover {
+            border-color: var(--terracotta-dim);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.04);
+        }
+
+        .product-main {}
+
+        .product-header {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .product-name {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 32px;
+            color: var(--ink);
+            letter-spacing: -0.025em;
+        }
+
+        .product-port {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-faint);
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            background: var(--bg-alt);
+            border-radius: 2px;
+        }
+
+        .product-status {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 4px 10px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+
+        .status-shipped {
+            color: var(--status-shipped);
+            background: rgba(74,124,89,0.1);
+            border: 1px solid rgba(74,124,89,0.3);
+        }
+
+        .status-build {
+            color: var(--status-build);
+            background: rgba(184,147,90,0.1);
+            border: 1px solid rgba(184,147,90,0.3);
+        }
+
+        .product-tagline {
+            font-family: 'Fraunces', serif;
+            font-style: italic;
+            font-size: 17px;
+            color: var(--terracotta);
+            margin-bottom: 20px;
+        }
+
+        .product-desc {
+            font-size: 14.5px;
+            color: var(--ink-dim);
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .product-stack {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--ink-faint);
+            letter-spacing: 0.04em;
+        }
+
+        .product-stack strong {
+            color: var(--ink-mid);
+            font-weight: 500;
+            margin-right: 6px;
+        }
+
+        .product-meta {
+            background: var(--bg-alt);
+            padding: 24px;
+            border-radius: 2px;
+            border: 1px solid var(--rule-faint);
+        }
+
+        .product-meta-row {
+            padding: 10px 0;
+            border-bottom: 1px solid var(--rule-faint);
+        }
+
+        .product-meta-row:last-child { border-bottom: none; }
+
+        .product-meta-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            margin-bottom: 4px;
+        }
+
+        .product-meta-value {
+            font-size: 13px;
+            color: var(--ink);
+            font-weight: 500;
+        }
+
+        .product-meta-value.muted {
+            color: var(--ink-dim);
+            font-weight: 400;
+        }
+
+        /* ── PRINCIPLES ──────────────────────────── */
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 48px 56px;
+            margin-top: 56px;
+        }
+
+        .principle {
+            position: relative;
+            padding-left: 24px;
+        }
+
+        .principle::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 8px;
+            width: 8px;
+            height: 8px;
+            background: var(--terracotta);
+            border-radius: 50%;
+        }
+
+        .principle-title {
+            font-family: 'Fraunces', serif;
+            font-weight: 500;
+            font-size: 18px;
+            color: var(--ink);
+            margin-bottom: 10px;
+        }
+
+        .principle-text {
+            font-size: 14px;
+            color: var(--ink-dim);
+            line-height: 1.75;
+        }
+
+        /* ── CTA ─────────────────────────────────── */
+        .cta-block {
+            text-align: center;
+            padding: 80px 32px;
+            background: var(--ink);
+            color: var(--bg);
+        }
+        .cta-block h2 { color: var(--bg); }
+        .cta-block h2 em { color: var(--terracotta); }
+        .cta-block p { color: var(--ink-faint); font-size: 16px; max-width: 580px; margin: 0 auto 32px; }
+
+        .cta-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--terracotta);
+            color: var(--bg);
+            padding: 14px 28px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            text-decoration: none;
+            font-weight: 500;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+        .cta-link:hover { background: var(--bg); color: var(--ink); }
+        .cta-link::after { content: '→'; transition: transform 0.2s; }
+        .cta-link:hover::after { transform: translateX(4px); }
+
+        /* ── FOOTER ──────────────────────────────── */
+        footer {
+            background: var(--bg-alt);
+            border-top: 1px solid var(--rule);
+            padding: 64px 32px 32px;
+            font-family: 'Inter', sans-serif;
+        }
+        .footer-inner { max-width: 1080px; margin: 0 auto; }
+        .footer-cols {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr 1fr 1.4fr;
+            gap: 48px;
+            margin-bottom: 48px;
+        }
+        .footer-col { display: flex; flex-direction: column; gap: 10px; }
+        .footer-col-title {
+            font-family: 'Fraunces', serif; font-weight: 500; font-size: 15px;
+            color: var(--ink); margin-bottom: 4px; letter-spacing: -0.01em;
+        }
+        .footer-col a { font-size: 13px; color: var(--ink-dim); text-decoration: none; transition: color 0.2s; }
+        .footer-col a:hover { color: var(--terracotta); }
+        .footer-col-text { font-size: 12.5px; color: var(--ink-dim); line-height: 1.7; }
+        .footer-col-text strong { color: var(--ink); font-weight: 500; }
+        .footer-bottom {
+            padding-top: 24px; border-top: 1px solid var(--rule-faint);
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: 'JetBrains Mono', monospace; font-size: 11px;
+            color: var(--ink-faint); letter-spacing: 0.04em;
+        }
+
+        @media (max-width: 900px) {
+            .product { grid-template-columns: 1fr; gap: 24px; padding: 28px; }
+            .hero-title { font-size: 54px; }
+            .principles-grid { grid-template-columns: 1fr; }
+            .nav-links { display: none; }
+            h2 { font-size: 30px; }
+            .footer-cols { grid-template-columns: 1fr 1fr; gap: 32px; }
+            .footer-bottom { flex-direction: column; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+    <a href="index.html" class="nav-brand">
+        <span class="nav-brand-name">silsila</span>
+        <span class="nav-arabic">سلسلة</span>
+        <span class="nav-brand-labs">Labs</span>
+    </a>
+    <div class="nav-links">
+        <a href="index.html#about">About</a>
+        <a href="index.html#services">Services</a>
+        <a href="training.html">AI Training</a>
+        <a href="#products">Products</a>
+        <a href="#principles">Principles</a>
+        <a href="index.html" class="home-link">← Main site</a>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-content">
+        <div class="hero-eyebrow">Silsila Labs</div>
+        <h1 class="hero-title">Building the tools<br>agents <em>actually need</em></h1>
+        <div class="hero-tagline">Infrastructure for AI agents in regulated industries.</div>
+        <p class="hero-desc">
+            Silsila Labs is the product sub-brand of Silsila &mdash; an unbroken chain from
+            consulting practice to the open-core software that practice keeps reaching for.
+            Built in the open, opinionated where it counts, and designed for teams who have to ship under scrutiny.
+        </p>
+    </div>
+</section>
+
+<div class="rule-accent"></div>
+
+<!-- PRODUCTS -->
+<section id="products">
+    <div class="container">
+        <div class="section-label">01 / Products</div>
+        <h2>The current <em>roster</em></h2>
+        <div class="section-text">
+            Five products at varying stages of maturity. Each starts from a real consulting problem
+            that came up too many times to keep solving by hand. Open-core where it makes sense;
+            managed tiers and advisory available alongside.
+        </div>
+
+        <div class="products">
+
+            <!-- WRAITH -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">Wraith</div>
+                        <span class="product-port">:8420</span>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">AI agent web extraction, structured.</div>
+                    <div class="product-desc">
+                        Playwright-based browsing layer purpose-built for agent workflows. TOML configs
+                        define extraction patterns; structured outputs go straight into downstream agents.
+                        FastAPI MCP server makes Wraith addressable from any agent runtime &mdash; Claude,
+                        OpenAI, local models. Built because every "just scrape it" task hides a six-month
+                        maintenance burden.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; Playwright &middot; FastAPI &middot; MCP &middot; TOML
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Agent infrastructure</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">Open-core</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Interface</div>
+                        <div class="product-meta-value muted">MCP server, CLI</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SPECTRE -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">Spectre</div>
+                        <span class="product-port">:8421</span>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Continuous verification for AI agents.</div>
+                    <div class="product-desc">
+                        Five-dimension evaluation system combining LLM-as-judge with deterministic checks.
+                        SQLite drift tracking surfaces when an agent's behaviour has materially changed
+                        between deployments. Built because "evals at launch" doesn't survive contact with
+                        a model that quietly upgraded on Tuesday. Open-core, with a managed tier from
+                        &pound;49/month and advisory at day rate.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; FastAPI &middot; SQLite &middot; LLM-as-judge &middot; Deterministic evals
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">AI assurance</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">Open-core + managed</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Pricing</div>
+                        <div class="product-meta-value muted">From &pound;49/mo</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TCG TRADING AGENT -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">TCG Trading Agent</div>
+                        <span class="product-port">:8426</span>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Autonomous TCG arbitrage, Bloomberg-style.</div>
+                    <div class="product-desc">
+                        18-module autonomous trading system for Pok&eacute;mon and One Piece TCG markets.
+                        Bloomberg terminal-style UI, BYOK LLM router, signal engine, portfolio manager,
+                        and human-in-the-loop eBay execution. A serious test bed for the patterns Silsila
+                        applies to regulated trading systems &mdash; just with cards instead of bonds.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; FastAPI &middot; BYOK LLM routing &middot; eBay API &middot; Terminal UI
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Trading agent</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">BYOK</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Loop</div>
+                        <div class="product-meta-value muted">Human-in-the-loop</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PERSONAENGINE -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">PersonaEngine</div>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Pre-UAT stakeholder simulation.</div>
+                    <div class="product-desc">
+                        Per-persona RAG pipelines simulate how different stakeholder groups will react to
+                        a draft requirement, surfacing contradiction and concern before specifications hit
+                        development. Cuts late-cycle rework by finding the objection that would have come up
+                        in week eight UAT &mdash; in week two discovery.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; RAG &middot; Contradiction detection &middot; Multi-persona orchestration
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">BA &amp; PM tooling</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">BYOK</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Phase</div>
+                        <div class="product-meta-value muted">Discovery / pre-UAT</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AGENTIC SCRUM TEAM -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">Agentic Scrum Team</div>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Four agents. Linear and Slack. Autonomous loop.</div>
+                    <div class="product-desc">
+                        Production Python service with four specialised agents &mdash; Product Owner, Business
+                        Analyst, Developer, QA &mdash; running an autonomous delivery loop. Linear is the ticket
+                        system; Slack is the human interface. Targeted at technical PMs and BAs in regulated
+                        industries who need agentic delivery patterns with proper audit trails.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; Linear API &middot; Slack API &middot; Multi-agent orchestration
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Agentic delivery</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">BYOK</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">For</div>
+                        <div class="product-meta-value muted">Technical PMs / BAs</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- PRINCIPLES -->
+<section id="principles" class="alt-bg">
+    <div class="container">
+        <div class="section-label">02 / Principles</div>
+        <h2>How Silsila Labs <em>builds</em></h2>
+        <div class="principles-grid">
+            <div class="principle">
+                <div class="principle-title">Open-core where it matters</div>
+                <div class="principle-text">The code that solves the actual problem is open. The managed tier and advisory are how Silsila stays sustainable &mdash; not by walling off the substance.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Built for regulated reality</div>
+                <div class="principle-text">Every product assumes audit trails, deterministic checkpoints, and the question "what would a regulator ask?" as design constraints &mdash; not afterthoughts.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">BYOK by default</div>
+                <div class="principle-text">Bring your own keys. Silsila Labs products don't lock you into a specific model provider, and don't take a margin on inference. You pick the model; we make it work.</div>
+            </div>
+            <div class="principle">
+                <div class="principle-title">Human-in-the-loop, not human-rubber-stamping</div>
+                <div class="principle-text">Where products take autonomous action, the human checkpoint is a real decision point with real context &mdash; not a confirmation dialog after the work is already done.</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="rule-accent"></div>
+
+<!-- CTA -->
+<section class="cta-block">
+    <h2>Building something <em>similar?</em></h2>
+    <p>
+        Silsila Labs products are also a portfolio of patterns. If you're building agentic systems
+        in a regulated industry, the consulting practice that produced these tools can help with yours.
+    </p>
+    <a href="index.html#contact" class="cta-link">Start a conversation</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-inner">
+        <div class="footer-cols">
+            <div class="footer-col">
+                <div class="footer-col-title">silsila <span style="font-family:'Reem Kufi',sans-serif;color:var(--terracotta);">سلسلة</span></div>
+                <div class="footer-col-text">
+                    Transformation consulting with AI fluency.<br>
+                    From ambiguity to adoption.
+                </div>
+            </div>
+            <div class="footer-col">
+                <div class="footer-col-title">Site</div>
+                <a href="index.html">Home</a>
+                <a href="training.html">AI Training</a>
+                <a href="labs.html">Silsila Labs</a>
+                <a href="index.html#case-studies">Case Studies</a>
+                <a href="index.html#contact">Contact</a>
+            </div>
+            <div class="footer-col">
+                <div class="footer-col-title">Legal</div>
+                <a href="privacy.html">Privacy Policy</a>
+                <a href="terms.html">Terms of Service</a>
+                <a href="privacy.html#cookies">Cookies</a>
+            </div>
+            <div class="footer-col">
+                <div class="footer-col-title">Company</div>
+                <div class="footer-col-text">
+                    Silsila Digital Ltd<br>
+                    Company No. <strong>12188279</strong><br>
+                    Registered in England &amp; Wales<br>
+                    <br>
+                    320 Firecrest Court,<br>
+                    Centre Park, Warrington,<br>
+                    United Kingdom, WA1 1RG
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2026 Silsila Digital Ltd. All rights reserved.</span>
+            <span>London, UK</span>
+        </div>
+    </div>
+</footer>
+
+<script>
+    const nav = document.getElementById('nav');
+    window.addEventListener('scroll', () => {
+        nav.classList.toggle('scrolled', window.scrollY > 50);
+    }, { passive: true });
+</script>
+
+</body>
+</html>

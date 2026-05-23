@@ -1,0 +1,21 @@
+{
+  "name": "Silsila",
+  "short_name": "silsila",
+  "description": "Transformation consulting with AI fluency. From ambiguity to adoption.",
+  "icons": [
+    {
+      "src": "/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#C24A1E",
+  "background_color": "#F7F4EE",
+  "display": "standalone",
+  "start_url": "/"
+}
