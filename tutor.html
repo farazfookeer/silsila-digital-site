@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Silsila AI Tutor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,500&family=Newsreader:opsz,wght@6..72,400;6..72,500&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Silsila light editorial system (reader mode) */
+    --bg:#F7F4EE; --bg-alt:#F0EBE0; --surface:#FFFFFF;
+    --terra:#C24A1E; --terra-soft:#d96a3f; --terra-dim:#a23c16;
+    --ink:#1A1A1A; --ink-dim:#5A554C; --ink-faint:#8A8478;
+    --brass:#B8935A;
+    --line:rgba(26,26,26,.12); --line-soft:rgba(26,26,26,.07);
+    --ok:#4A7C59; --bad:#C24A1E;
+    --display:'Fraunces',Georgia,serif; --body:'Newsreader',Georgia,serif; --mono:'JetBrains Mono',monospace;
+    /* terminal mode stays dark, recoloured to warm ink + terracotta */
+    --term-bg:#1A1714; --term-bg-2:#221d18; --term-bg-3:#2b2520;
+    --panel:#221d18; --sys:#7a9b6f; --amber:#C8A24E; --sel-bg:#C24A1E; --sel-fg:#F7F4EE;
+    --txt:#e8e2d6; --dim:#8A8478;
+    /* legacy aliases so any leftover refs still resolve to brand colours */
+    --navy:#F7F4EE; --navy-2:#F0EBE0; --navy-3:#EAE3D5;
+    --gold:#C24A1E; --gold-soft:#d96a3f; --gold-dim:#a23c16;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0}
+  body[data-mode="reader"]{
+    overflow-x:hidden;overflow-y:auto;color:var(--ink);font-family:var(--body);
+    font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased;background:var(--bg);
+    background-image:
+      radial-gradient(1200px 600px at 80% -10%, rgba(194,74,30,.05), transparent 60%),
+      linear-gradient(rgba(26,26,26,.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(26,26,26,.018) 1px, transparent 1px);
+    background-size:auto, 44px 44px, 44px 44px;
+  }
+  body[data-mode="terminal"]{overflow:hidden;color:var(--txt);font-family:var(--mono);font-size:14px;line-height:1.55;background:var(--term-bg)}
+  body[data-mode="terminal"]::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:9;
+    background:repeating-linear-gradient(0deg,rgba(0,0,0,.14),rgba(0,0,0,.14) 1px,transparent 1px,transparent 3px);opacity:.3;mix-blend-mode:multiply}
+  body[data-mode="terminal"]::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9;
+    background:radial-gradient(120% 120% at 50% 40%,transparent 55%,rgba(0,0,0,.45))}
+
+  #reader-app,#tui-app{display:none}
+  body[data-mode="reader"] #reader-app{display:block}
+  body[data-mode="terminal"] #tui-app{display:block;height:100%}
+
+  /* ---- mode toggle (shared) ---- */
+  #modeToggle{position:fixed;top:11px;left:50%;transform:translateX(-50%);z-index:100;display:flex;
+    border:1px solid var(--terra);border-radius:999px;overflow:hidden;background:rgba(247,244,238,.92);backdrop-filter:blur(6px)}
+  #modeToggle button{background:none;border:none;color:var(--ink-dim);font-family:var(--mono);font-size:11px;
+    font-weight:600;letter-spacing:.14em;text-transform:uppercase;padding:7px 16px;cursor:pointer;transition:.18s}
+  #modeToggle button.on{background:var(--terra);color:var(--surface)}
+
+  /* ========================= READER MODE ========================= */
+  #reader-app .wrap{max-width:920px;margin:0 auto;padding:0 22px}
+  #reader-app .mono{font-family:var(--mono);letter-spacing:.04em}
+  #reader-app .tag{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+  #reader-app header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:50;background:rgba(247,244,238,.85);backdrop-filter:blur(10px)}
+  #reader-app .bar{display:flex;align-items:center;justify-content:space-between;height:62px}
+  #reader-app .brand{display:flex;align-items:baseline;gap:10px;cursor:pointer}
+  #reader-app .brand b{font-family:var(--display);font-weight:700;font-size:21px;letter-spacing:.01em}
+  #reader-app .brand .ar{font-size:22px;color:var(--gold)}
+  #reader-app .brand small{font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint)}
+  #reader-app .prog-mini{font-family:var(--mono);font-size:11px;color:var(--ink-dim);letter-spacing:.1em}
+  #reader-app .prog-mini b{color:var(--gold)}
+  #reader-app .hero{padding:64px 0 30px}
+  #reader-app .hero .tag{margin-bottom:18px;display:block}
+  #reader-app .hero h1{font-family:var(--display);font-weight:700;font-size:clamp(38px,7vw,66px);line-height:1.02;letter-spacing:-.01em}
+  #reader-app .hero h1 i{font-style:italic;color:var(--gold);font-weight:600}
+  #reader-app .hero p{margin-top:20px;max-width:560px;color:var(--ink-dim);font-size:20px}
+  #reader-app .meta{margin-top:26px;display:flex;gap:26px;flex-wrap:wrap}
+  #reader-app .meta div{font-family:var(--mono);font-size:12px;color:var(--ink-faint);letter-spacing:.08em}
+  #reader-app .meta b{display:block;font-family:var(--display);font-size:26px;color:var(--ink);letter-spacing:0;margin-bottom:2px}
+  #reader-app .cta{margin-top:34px;display:inline-flex;align-items:center;gap:12px;background:var(--gold);color:var(--navy);
+    border:none;font-family:var(--mono);font-weight:600;font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:15px 26px;cursor:pointer;transition:.2s;border-radius:2px}
+  #reader-app .cta:hover{background:var(--gold-soft);transform:translateY(-1px)}
+  #reader-app .cta.ghost{background:transparent;color:var(--gold);border:1px solid var(--line);margin-left:10px}
+  #reader-app .cta.ghost:hover{border-color:var(--gold);background:rgba(194,74,30,.06)}
+  #reader-app .shead{display:flex;align-items:center;gap:16px;margin:54px 0 24px}
+  #reader-app .shead h2{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-dim);white-space:nowrap}
+  #reader-app .shead .rule{height:1px;flex:1;background:var(--line)}
+  #reader-app .tiers{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:680px){#reader-app .tiers{grid-template-columns:1fr}}
+  #reader-app .tier{background:linear-gradient(180deg,var(--navy-2),var(--navy));border:1px solid var(--line);border-radius:4px;padding:24px 22px;cursor:pointer;position:relative;overflow:hidden;transition:.22s}
+  #reader-app .tier:hover{border-color:var(--gold);transform:translateY(-2px)}
+  #reader-app .tier::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--gold);opacity:.5;transition:.22s}
+  #reader-app .tier:hover::before{opacity:1}
+  #reader-app .tier .num{font-family:var(--mono);font-size:11px;color:var(--gold);letter-spacing:.2em}
+  #reader-app .tier h3{font-family:var(--display);font-weight:600;font-size:24px;margin:8px 0 6px;letter-spacing:-.01em}
+  #reader-app .tier p{color:var(--ink-dim);font-size:15.5px;line-height:1.5}
+  #reader-app .tier .foot{margin-top:18px;display:flex;align-items:center;justify-content:space-between}
+  #reader-app .tier .count{font-family:var(--mono);font-size:11px;color:var(--ink-faint);letter-spacing:.1em}
+  #reader-app .pbar{height:4px;background:var(--navy-3);border-radius:3px;overflow:hidden;margin-top:14px}
+  #reader-app .pbar i{display:block;height:100%;background:var(--gold);transition:width .4s}
+  #reader-app .back{font-family:var(--mono);font-size:12px;color:var(--ink-dim);letter-spacing:.1em;cursor:pointer;background:none;border:none;display:inline-flex;gap:8px;align-items:center;margin:28px 0 6px;padding:6px 0}
+  #reader-app .back:hover{color:var(--gold)}
+  #reader-app .lessrow{display:flex;align-items:center;gap:16px;padding:18px 4px;border-bottom:1px solid var(--line-soft);cursor:pointer;transition:.18s}
+  #reader-app .lessrow:hover{padding-left:12px}
+  #reader-app .lessrow:hover h4{color:var(--gold)}
+  #reader-app .dot{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);flex:none;display:grid;place-items:center;font-family:var(--mono);font-size:11px;color:var(--ink-faint)}
+  #reader-app .dot.done{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+  #reader-app .lessrow h4{font-family:var(--display);font-weight:500;font-size:20px;transition:.18s}
+  #reader-app .lessrow .est{font-family:var(--mono);font-size:11px;color:var(--ink-faint);margin-left:auto;letter-spacing:.08em}
+  #reader-app .reader h1{font-family:var(--display);font-weight:700;font-size:clamp(30px,5.5vw,46px);line-height:1.08;letter-spacing:-.01em;margin:8px 0 4px}
+  #reader-app .reader .crumb{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:12px}
+  #reader-app .reader .lead{font-size:21px;color:var(--ink-dim);margin:18px 0 8px;line-height:1.55}
+  #reader-app .body p{margin:18px 0;color:var(--ink)}
+  #reader-app .body h3{font-family:var(--display);font-weight:600;font-size:23px;margin:34px 0 8px;color:var(--terra)}
+  #reader-app .body ul{margin:16px 0 16px 4px;list-style:none}
+  #reader-app .body li{position:relative;padding-left:24px;margin:10px 0;color:var(--ink)}
+  #reader-app .body li::before{content:'';position:absolute;left:2px;top:13px;width:7px;height:7px;background:var(--gold);transform:rotate(45deg)}
+  #reader-app .body code{font-family:var(--mono);font-size:14px;background:var(--bg-alt);padding:2px 7px;border-radius:3px;color:var(--terra-dim)}
+  #reader-app .callout{border:1px solid var(--line);border-left:3px solid var(--gold);background:var(--navy-2);padding:18px 20px;margin:26px 0;border-radius:0 4px 4px 0}
+  #reader-app .callout .tag{margin-bottom:8px;display:block}
+  #reader-app .callout p{margin:0;font-size:17px}
+  #reader-app .quiz{margin:40px 0 10px;border-top:1px solid var(--line);padding-top:34px}
+  #reader-app .quiz .tag{display:block;margin-bottom:14px}
+  #reader-app .scenario{background:var(--navy-2);border:1px solid var(--line);border-radius:4px;padding:22px;margin-bottom:22px}
+  #reader-app .scenario p{margin:0;font-size:18px;color:var(--ink)}
+  #reader-app .q{font-family:var(--display);font-weight:600;font-size:22px;margin-bottom:18px}
+  #reader-app .opt{display:block;width:100%;text-align:left;background:var(--navy-2);border:1px solid var(--line);color:var(--ink);font-family:var(--body);font-size:17px;padding:16px 18px;margin:10px 0;border-radius:4px;cursor:pointer;transition:.16s;position:relative}
+  #reader-app .opt:hover:not(:disabled){border-color:var(--gold);background:var(--navy-3)}
+  #reader-app .opt .k{font-family:var(--mono);font-size:12px;color:var(--gold);margin-right:12px;letter-spacing:.1em}
+  #reader-app .opt:disabled{cursor:default}
+  #reader-app .opt.correct{border-color:var(--ok);background:rgba(93,184,138,.10)}
+  #reader-app .opt.correct .k{color:var(--ok)}
+  #reader-app .opt.wrong{border-color:var(--bad);background:rgba(215,122,106,.10)}
+  #reader-app .opt.wrong .k{color:var(--bad)}
+  #reader-app .explain{margin-top:18px;border-left:3px solid var(--ok);background:var(--navy-2);padding:16px 20px;border-radius:0 4px 4px 0}
+  #reader-app .explain.miss{border-color:var(--bad)}
+  #reader-app .explain b{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;display:block;margin-bottom:6px}
+  #reader-app .explain.ok b{color:var(--ok)} #reader-app .explain.miss b{color:var(--bad)}
+  #reader-app .explain p{margin:0;font-size:16.5px;color:var(--ink-dim)}
+  #reader-app .navrow{display:flex;justify-content:space-between;align-items:center;margin:42px 0 70px;gap:14px}
+  #reader-app footer{border-top:1px solid var(--line);margin-top:70px;padding:30px 0 60px}
+  #reader-app footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+  #reader-app footer .mono{font-size:11px;color:var(--ink-faint);letter-spacing:.1em}
+  #reader-app footer .mono b{color:var(--gold)}
+  #reader-app .reset{background:none;border:1px solid var(--line);color:var(--ink-faint);font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:8px 14px;border-radius:3px;cursor:pointer}
+  #reader-app .reset:hover{border-color:var(--bad);color:var(--bad)}
+  #reader-app .fade{animation:fade .4s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* ========================= TERMINAL MODE ========================= */
+  #tui-app .screen{height:100%;display:flex;flex-direction:column;max-width:1000px;margin:0 auto;padding:0 14px}
+  #tui-app .menubar{flex:none;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(194,74,30,.3);padding:8px 4px;color:var(--dim);font-size:12px}
+  #tui-app .menubar .l{color:var(--gold);font-weight:700;letter-spacing:.06em}
+  #tui-app .menubar .l .ar{color:var(--gold-soft)}
+  #tui-app .menubar .r b{color:var(--gold)}
+  #tui-app .view{flex:1;overflow-y:auto;padding:48px 4px 6px;scrollbar-width:thin;scrollbar-color:var(--gold) transparent}
+  #tui-app .view::-webkit-scrollbar{width:8px}
+  #tui-app .view::-webkit-scrollbar-thumb{background:var(--gold)}
+  #tui-app .panel{position:relative;border:1px solid var(--gold);padding:18px 16px 16px;margin:0 0 16px}
+  #tui-app .panel>.legend{position:absolute;top:-9px;left:14px;background:var(--term-bg);padding:0 8px;color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.08em}
+  #tui-app .banner{color:var(--gold);white-space:pre;line-height:1.05;font-weight:700;font-size:clamp(5.4px,2.4vw,13px);text-shadow:0 0 14px rgba(194,74,30,.35);margin:6px 0 2px}
+  #tui-app .sub{color:var(--dim);font-size:12px;letter-spacing:.18em;margin-bottom:4px}
+  #tui-app .sys{color:var(--sys)} #tui-app .gold{color:var(--gold)} #tui-app .dimt{color:var(--dim)}
+  #tui-app .row{display:flex;gap:10px;align-items:baseline;padding:5px 8px;cursor:pointer;border:1px solid transparent}
+  #tui-app .row:hover{background:rgba(194,74,30,.08)}
+  #tui-app .row.active{background:var(--sel-bg);color:var(--sel-fg)}
+  #tui-app .row.active .num,#tui-app .row.active .pct,#tui-app .row.active .chk,#tui-app .row.active .meta,#tui-app .row.active .bar{color:var(--sel-fg)}
+  #tui-app .row .num{color:var(--gold);font-weight:700;flex:none}
+  #tui-app .row .title{flex:1}
+  #tui-app .row .meta{color:var(--dim);flex:none;font-size:12px}
+  #tui-app .row .pct{color:var(--gold);flex:none}
+  #tui-app .row .chk{color:var(--ok);flex:none}
+  #tui-app .bar{color:var(--gold);letter-spacing:-1px}
+  #tui-app .lead{color:var(--gold-soft);margin:2px 0 14px}
+  #tui-app .body p{margin:12px 0;color:var(--txt)}
+  #tui-app .body h3{color:var(--gold);margin:20px 0 6px;font-weight:700;font-size:14px}
+  #tui-app .body h3::before{content:'## ';color:var(--dim)}
+  #tui-app .body ul{list-style:none;margin:10px 0}
+  #tui-app .body li{padding-left:18px;position:relative;margin:6px 0}
+  #tui-app .body li::before{content:'›';position:absolute;left:2px;color:var(--gold);font-weight:700}
+  #tui-app .body code{color:var(--amber);background:rgba(194,74,30,.1);padding:1px 5px}
+  #tui-app .note{border-left:2px solid var(--gold);padding:8px 0 8px 14px;margin:18px 0;color:var(--gold-soft)}
+  #tui-app .note::before{content:'[!] ';color:var(--gold);font-weight:700}
+  #tui-app .scn{border:1px dashed rgba(194,74,30,.4);padding:12px 14px;margin:6px 0 14px;color:var(--txt)}
+  #tui-app .scn::before{content:'SCENARIO ▸ ';color:var(--gold);font-weight:700;font-size:12px}
+  #tui-app .q{color:var(--gold-soft);font-weight:500;margin-bottom:12px}
+  #tui-app .opt{display:flex;gap:10px;padding:8px 10px;margin:6px 0;border:1px solid rgba(194,74,30,.25);cursor:pointer}
+  #tui-app .opt:hover{border-color:var(--gold);background:rgba(194,74,30,.06)}
+  #tui-app .opt .k{color:var(--gold);font-weight:700;flex:none}
+  #tui-app .opt.correct{border-color:var(--ok);background:rgba(93,184,138,.12)}
+  #tui-app .opt.correct .k{color:var(--ok)}
+  #tui-app .opt.wrong{border-color:var(--bad);background:rgba(224,125,106,.12)}
+  #tui-app .opt.wrong .k{color:var(--bad)}
+  #tui-app .opt.lock{cursor:default}
+  #tui-app .verdict{margin-top:14px;padding:10px 14px;border-left:2px solid var(--ok)}
+  #tui-app .verdict.miss{border-color:var(--bad)}
+  #tui-app .verdict b{display:block;color:var(--ok);margin-bottom:4px}
+  #tui-app .verdict.miss b{color:var(--bad)}
+  #tui-app .verdict p{color:var(--dim);margin:0}
+  #tui-app .hint{color:var(--dim);font-size:12px;margin:10px 0}
+  #tui-app .hint kbd{color:var(--gold);border:1px solid rgba(194,74,30,.4);padding:0 5px;border-radius:2px}
+  #tui-app .promptbar{flex:none;border-top:1px solid rgba(194,74,30,.3);padding:10px 4px 12px;display:flex;align-items:center;gap:8px}
+  #tui-app .ps1{color:var(--gold);font-weight:700;white-space:nowrap}
+  #tui-app .ps1 .path{color:var(--sys)}
+  #tui-app #cmd{flex:1;background:transparent;border:none;outline:none;color:var(--txt);font-family:inherit;font-size:14px;caret-color:transparent}
+  #tui-app .caret{width:8px;height:16px;background:var(--gold);animation:blink 1s steps(1) infinite;flex:none;margin-left:-6px}
+  @keyframes blink{50%{opacity:0}}
+  #tui-app .statusbar{flex:none;background:var(--terra);color:var(--sel-fg);font-size:11px;font-weight:700;letter-spacing:.05em;padding:3px 10px;display:flex;justify-content:space-between}
+  #tui-app .boot{padding:20px 4px;color:var(--sys);white-space:pre-wrap}
+  #tui-app .boot .g{color:var(--gold)} #tui-app .boot .d{color:var(--dim)}
+  #tui-app .cur{animation:blink 1s steps(1) infinite}
+</style>
+</head>
+<body data-mode="reader">
+
+<div id="modeToggle">
+  <button data-m="reader" class="on" onclick="setMode('reader')">Reader</button>
+  <button data-m="terminal" onclick="setMode('terminal')">Terminal</button>
+</div>
+
+<!-- ============ READER ============ -->
+<div id="reader-app">
+  <header><div class="wrap bar">
+    <div class="brand" onclick="R.go('home')">
+      <span class="ar">سِلْسِلَة</span><b>Silsila</b><small>AI Tutor</small>
+    </div>
+    <div class="prog-mini" id="rProgMini"></div>
+  </div></header>
+  <main class="wrap" id="r-view"></main>
+  <footer><div class="wrap">
+    <span class="mono">Silsila AI Tutor · built by <b>Faraz Fookeer</b> · Silsila Labs</span>
+    <span style="display:flex;gap:18px;align-items:center">
+      <a href="index.html" class="mono" style="color:var(--terra);text-decoration:none;border-bottom:1px solid var(--line)">← home</a>
+      <button class="reset" onclick="R.resetAll()">Reset progress</button>
+    </span>
+  </div></footer>
+</div>
+
+<!-- ============ TERMINAL ============ -->
+<div id="tui-app"><div class="screen">
+  <div class="menubar">
+    <span class="l"><span class="ar">سِلْسِلَة</span> SILSILA · TUTOR</span>
+    <span class="r"><b id="mProg">0/0</b> · <b id="mPct">0%</b></span>
+  </div>
+  <div class="view" id="t-view"></div>
+  <div class="promptbar">
+    <span class="ps1">silsila:<span class="path" id="ps1path">~</span>$</span>
+    <input id="cmd" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" />
+    <span class="caret"></span>
+  </div>
+  <div class="statusbar"><span id="stLeft">READY</span><span id="stRight">type 'help' · ↑↓ move · enter</span></div>
+</div></div>
+
+<script>
+/* ============================================================
+   CURRICULUM — edit this array to load your 35 lessons.
+   Shared by both Reader and Terminal modes.
+   lesson = { title, est, lead,
+     body:[ {h} | {p} | {list:[]} | {note} ],
+     quiz:{ scenario, q, options:[], answer, why } }
+   ============================================================ */
+const CURRICULUM = [
+ {num:"01", title:"Foundations", blurb:"What these models actually are, and the mental models that keep you out of trouble.",
+  lessons:[
+   {title:"How an LLM Actually Predicts", est:"6 min",
+    lead:"Before you can govern or build with a model, you need an honest picture of what it does.",
+    body:[
+     {p:"A large language model is a next-token predictor. Given a sequence of text, it outputs a probability distribution over what comes next, samples from it, appends the result, and repeats. There is no database lookup, no reasoning engine in the classical sense, just a very large function trained to make these predictions well."},
+     {h:"Why this framing matters"},
+     {p:"Most failures in production trace back to teams treating the model as a fact store rather than a probabilistic generator. It does not <code>retrieve</code> truth; it produces the most plausible continuation given its training and your prompt."},
+     {list:["Plausible is not the same as correct. Fluency is free, accuracy is not.","Behaviour is distributional. The same prompt can yield different outputs.","Context is everything. What you put in the window steers the distribution."]},
+     {note:"If you remember one thing: the model optimises for plausibility, and your job as a BA or PM is to add the structure that makes plausible answers also be correct answers."}
+    ],
+    quiz:{scenario:"A stakeholder pilots a chatbot on internal policy docs. It answers confidently but occasionally invents a clause that does not exist. They ask you why a 'trained' model would 'lie'.",
+     q:"What is the most accurate explanation to give them?",
+     options:["The model was trained on bad data and needs retraining","The model generates the most plausible continuation, which can look authoritative even when fabricated","The model has a bug that should be raised with the vendor","The model is too small and a larger one would never do this"],
+     answer:1,
+     why:"It is producing a plausible-sounding continuation, not retrieving a verified fact. Larger models reduce but never eliminate this. The fix is structural, grounding the model in retrieved source text, not retraining or assuming a defect."}},
+   {title:"Tokens, Context Windows and Why They Bill You", est:"5 min",
+    lead:"The unit of cost and the unit of memory are the same thing: the token.",
+    body:[
+     {p:"Models read and write in tokens, chunks of text roughly three-quarters of a word. The context window is the maximum number of tokens the model can consider at once, covering both your input and its output."},
+     {h:"The practical consequences"},
+     {list:["Everything you send and receive is metered in tokens. That is your bill.","Once the window fills, the earliest content is dropped or must be summarised.","Long documents must be chunked, not pasted wholesale, if they exceed the window."]},
+     {p:"For a BA scoping a feature, this turns vague requirements into hard constraints: 'summarise the whole regulation' becomes 'retrieve the relevant sections, then summarise', because the whole regulation will not fit and you would not want to pay for it if it did."}
+    ],
+    quiz:{scenario:"A team wants to feed a 400-page policy manual into a model on every user question so 'it always has the full context'.",
+     q:"What is the strongest objection to raise in design review?",
+     options:["Models cannot read PDFs","It will be slow, expensive, and likely exceed the context window. Retrieve relevant sections instead","Policy manuals are confidential and cannot be used","The model will memorise the manual and leak it"],
+     answer:1,
+     why:"Sending the full manual every turn is costly, latency-heavy, and probably overflows the window. The standard pattern is retrieval: fetch only the relevant passages per query. This is the entry point to RAG, covered in Tier 03."}}
+  ]},
+ {num:"02", title:"Prompting & Interaction", blurb:"Turning fuzzy intent into reliable, repeatable model behaviour.",
+  lessons:[
+   {title:"Structure Beats Cleverness", est:"6 min",
+    lead:"The reliable gains come from structure and examples, not magic phrases.",
+    body:[
+     {p:"A robust prompt usually has four parts: a role or task framing, the actual instruction, any examples of the desired output, and an explicit format specification. Clarity and constraint outperform clever incantations every time."},
+     {h:"The reliable levers"},
+     {list:["Be specific about the task and the audience.","Show one or two examples of good output (few-shot).","Specify the exact output shape: headings, fields, length.","Ask for step-by-step reasoning when the task involves logic."]},
+     {note:"Treat the prompt as a spec, not a wish. If a human contractor could misread it, so can the model."}
+    ],
+    quiz:{scenario:"Two prompts are tested. Prompt A: 'Summarise this complaint.' Prompt B: 'You are a complaints analyst. Summarise this complaint in 3 bullets: (1) issue, (2) customer ask, (3) regulatory flag if any. Be concise.'",
+     q:"Why does Prompt B reliably outperform Prompt A?",
+     options:["It is longer, and longer prompts always work better","It supplies role, structure, and an explicit output format, reducing ambiguity","It uses the word 'analyst' which the model was trained to obey","It will use fewer tokens"],
+     answer:1,
+     why:"B constrains the task: role, exact structure, and output shape. That removes the ambiguity the model would otherwise fill with guesses. Length itself is not the lever, specificity is."}},
+   {title:"When the Model Should Say 'I Don't Know'", est:"5 min",
+    lead:"Designing for graceful failure is a prompting discipline, not an afterthought.",
+    body:[
+     {p:"Left unguided, models rarely abstain. They would rather produce a confident guess. In regulated or high-stakes contexts, you must explicitly license and instruct the model to decline."},
+     {list:["Tell it the acceptable response when it lacks grounds: e.g. 'If the answer is not in the provided text, say you cannot find it.'","Separate 'answer' from 'confidence' so downstream systems can route low-confidence cases to a human.","Never assume silence. If you did not ask for abstention, you will get fabrication."]}
+    ],
+    quiz:{scenario:"A grounded Q&A assistant over your policy library keeps answering questions whose answers simply are not in the library, inventing plausible policy.",
+     q:"What is the most direct fix?",
+     options:["Add more documents until every question is covered","Add an instruction to answer only from the provided text and otherwise state it cannot find the answer","Lower the model temperature to zero","Switch to a larger model"],
+     answer:1,
+     why:"The behaviour is a missing instruction, not a missing document or a defect. Explicitly licensing 'I cannot find this in the sources' is the standard guardrail for grounded assistants."}}
+  ]},
+ {num:"03", title:"RAG & Knowledge Systems", blurb:"Grounding models in your own documents, the workhorse pattern of enterprise AI.",
+  lessons:[
+   {title:"Anatomy of a RAG Pipeline", est:"7 min",
+    lead:"Retrieval-augmented generation is how you make a model answer from your data without retraining it.",
+    body:[
+     {p:"RAG splits the problem in two: a retrieval step that finds relevant text, and a generation step that answers using only that text. The model is never retrained; instead, the right context is fetched at query time."},
+     {h:"The pipeline stages"},
+     {list:["Ingest: documents are split into chunks.","Embed: each chunk becomes a vector capturing its meaning.","Store: vectors go into a vector database.","Retrieve: the user's question is embedded and the nearest chunks are pulled.","Generate: those chunks are placed in the prompt and the model answers from them."]},
+     {note:"RAG turns 'the model doesn't know our policies' into a search-and-cite problem you can actually engineer and audit."}
+    ],
+    quiz:{scenario:"Your RAG assistant returns answers that are well-written but cite the wrong section of a regulation. The generation prompt is fine.",
+     q:"Where should you look first?",
+     options:["The model, swap it for a smarter one","The retrieval step: embeddings or chunking are surfacing the wrong passages","The user: they are asking unclear questions","The vector database vendor's pricing"],
+     answer:1,
+     why:"If the generated prose is good but the source is wrong, the model is faithfully using bad inputs. The defect is upstream in retrieval, chunking strategy or embedding quality, not in generation."}},
+   {title:"Chunking Is a Design Decision", est:"5 min",
+    lead:"How you cut up documents quietly determines whether retrieval works.",
+    body:[
+     {p:"Chunk too large and you bury the relevant sentence among noise; chunk too small and you sever the context that makes a passage meaningful. Good chunking respects the document's natural structure: clauses, sections, headings."},
+     {list:["Split on semantic boundaries, not arbitrary character counts where possible.","Overlap chunks slightly so a fact spanning a boundary is not lost.","Preserve metadata (source, section number, date) so answers can cite."]}
+    ],
+    quiz:{scenario:"A team splits every document into fixed 500-character chunks. Retrieval keeps returning half-sentences that miss the key qualifier.",
+     q:"What is the most likely improvement?",
+     options:["Increase chunks to 50,000 characters each","Chunk on semantic boundaries with slight overlap, preserving section context","Remove all metadata to save space","Stop chunking and embed whole documents"],
+     answer:1,
+     why:"Fixed character cuts sever meaning. Splitting on natural boundaries with overlap keeps qualifiers attached to their clauses and improves retrieval precision, without swinging to an unworkable extreme."}}
+  ]},
+ {num:"04", title:"Agents & Orchestration", blurb:"When models stop answering and start doing: tools, loops, and multi-step work.",
+  lessons:[
+   {title:"From Chatbot to Agent", est:"6 min",
+    lead:"An agent is a model given tools and a loop, allowed to take actions toward a goal.",
+    body:[
+     {p:"A plain model produces text. An agent is wrapped in a loop: it can call tools (search, a database, an API), observe the result, decide the next step, and repeat until the task is done. This is what lets a model book, fetch, file, or reconcile rather than merely describe."},
+     {h:"The core loop"},
+     {list:["Plan: decide what to do next given the goal and history.","Act: call a tool with chosen inputs.","Observe: read the tool's result.","Repeat: until a stopping condition is met."]},
+     {note:"The power and the danger are the same property: the agent acts in the world. Every tool you grant is also a way for it to go wrong."}
+    ],
+    quiz:{scenario:"A stakeholder wants an agent that can 'just handle' refund approvals end to end, including issuing the payment, with no human step.",
+     q:"What is the right design instinct in a regulated setting?",
+     options:["Grant full autonomy, that is the point of agents","Keep a human-in-the-loop approval gate before the irreversible action (payment)","Refuse to build any agent","Let it run but log everything afterward"],
+     answer:1,
+     why:"Irreversible, high-impact actions warrant a human approval gate. Logging after the fact does not prevent a bad payment. Agency should be scoped to the risk: autonomy for low-stakes steps, human sign-off for the irreversible one."}},
+   {title:"Why Multi-Agent Systems Drift", est:"6 min",
+    lead:"When agents talk to agents, they invent shorthand that excludes you.",
+    body:[
+     {p:"Put several agents in a loop and they optimise for getting the task done between themselves. Over time their messages compress into a private register: abbreviations and conventions that are efficient for them and opaque to human reviewers. This is sometimes called convention compression or register collapse."},
+     {list:["Efficiency between agents trades off against legibility to humans.","Audit trails become unreadable precisely when you most need them.","Design must force a human-legible layer: structured logs, plain-language summaries at checkpoints."]}
+    ],
+    quiz:{scenario:"A multi-agent pipeline runs faster each week, but the inter-agent logs have become a terse shorthand your compliance reviewer can no longer follow.",
+     q:"What does this signal, and what is the fix?",
+     options:["Success, faster is better, ignore the logs","Register collapse: enforce a human-legible summary layer at audit checkpoints","A bug, restart the agents","Nothing, logs are not important for agents"],
+     answer:1,
+     why:"This is convention compression: the agents have optimised for each other at the cost of human legibility. The remedy is to mandate a structured, plain-language layer at the points where humans need to audit. Legibility as a design requirement, not a hope."}}
+  ]},
+ {num:"05", title:"Evaluation & Guardrails", blurb:"Proving the thing works, and keeping it working as the world drifts.",
+  lessons:[
+   {title:"You Cannot Manage What You Cannot Evaluate", est:"6 min",
+    lead:"Eval is the discipline that turns 'it seems good' into evidence.",
+    body:[
+     {p:"Because outputs are probabilistic, you evaluate systematically rather than by spot-checking. A good eval suite mixes deterministic checks (does it match a known answer, hit a schema, stay within policy) with judgement-based checks (is the answer actually useful), often using a model-as-judge for the latter."},
+     {h:"What to measure"},
+     {list:["Output quality against a reference set.","Correct tool use and workflow integrity for agents.","Guardrail adherence: does it refuse what it should.","Consistency and drift over time."]},
+     {note:"An eval suite is to an AI feature what a test suite is to software: the thing that lets you change with confidence."}
+    ],
+    quiz:{scenario:"A model performed well at launch. Three months on, users report worse answers, but nothing in the code changed.",
+     q:"What is the most likely cause and the safeguard you should have had?",
+     options:["The model file decayed; reinstall it","Input distribution or an underlying model update drifted; continuous evaluation would have flagged it","Users became more critical; ignore it","The server is slow; add capacity"],
+     answer:1,
+     why:"Quality can degrade with no code change because the inputs the model sees, or a hosted model version, shift over time: drift. Continuous evaluation against a fixed reference set surfaces this before users do."}},
+   {title:"Guardrails: Refusal, Validation, Containment", est:"5 min",
+    lead:"Guardrails are the layer that constrains a probabilistic system into acceptable behaviour.",
+    body:[
+     {p:"Guardrails operate at three points: before generation (input filtering), during (instructions and constraints), and after (validating and, if needed, blocking the output). Relying on the model's good behaviour alone is not a control."},
+     {list:["Validate outputs against a schema or policy before they reach a user or a downstream system.","Contain blast radius: limit what tools and data the system can touch.","Treat the prompt's instructions as guidance, not a guarantee, and verify independently."]}
+    ],
+    quiz:{scenario:"A vendor assures you their assistant 'is instructed never to give financial advice', so no output checks are needed.",
+     q:"How should you respond?",
+     options:["Accept it, the instruction is sufficient","Instructions reduce but do not guarantee behaviour; add an independent output validation layer","Ban the assistant entirely","Ask them to make the instruction longer"],
+     answer:1,
+     why:"A prompt instruction is a soft control, not a guarantee, on a probabilistic system. Independent validation of outputs is what makes the control auditable and reliable: defence in depth, not trust in a sentence."}}
+  ]},
+ {num:"06", title:"Governance & Deployment", blurb:"Shipping responsibly: regulation, risk, and the operating model around the system.",
+  lessons:[
+   {title:"Mapping the Regulatory Surface", est:"7 min",
+    lead:"In regulated industries, the model is the easy part. The controls around it are the work.",
+    body:[
+     {p:"Deploying AI in finance means situating it within existing obligations: model risk management expectations, operational resilience rules, and emerging AI-specific regulation. The questions are familiar to any risk professional: who owns it, how is it monitored, what happens when it fails."},
+     {h:"The recurring obligations"},
+     {list:["Accountability: a named owner for the system and its outcomes.","Explainability proportionate to the decision's impact.","Monitoring, logging, and the ability to intervene or roll back.","Documentation that would survive a regulator's review."]},
+     {note:"Frame AI governance as an extension of existing model and operational risk frameworks, not a new island. That is what gets it through the second line."}
+    ],
+    quiz:{scenario:"A business unit wants to deploy an AI tool that influences credit decisions and asks why governance is 'slowing them down'.",
+     q:"What is the most defensible position to take?",
+     options:["Governance is optional for pilots","A decision with material customer impact needs accountability, explainability, monitoring and rollback before it ships","Only the vendor is responsible for the model","Speed matters more than controls in a competitive market"],
+     answer:1,
+     why:"Material, customer-affecting decisions attract the full weight of model and operational risk expectations. The controls are not optional friction; they are what makes the deployment defensible to a regulator and survivable when it fails."}},
+   {title:"Rollback Is a Feature, Not an Apology", est:"5 min",
+    lead:"If you cannot turn it off and undo it, you have not finished designing it.",
+    body:[
+     {p:"Every AI deployment needs a defined failure response before launch: how you detect a problem, how you intervene, and how you reverse its effects. For agents that take actions, reversibility must be designed into the action itself."},
+     {list:["Detection: monitoring and alerting that catch degradation early.","Intervention: a kill switch and a path to human control.","Reversal: the ability to undo actions, or a gate that prevents irreversible ones."]}
+    ],
+    quiz:{scenario:"An agent that auto-adjusts customer limits has no defined way to reverse a bad batch of adjustments. The team plans to 'fix issues manually if they arise'.",
+     q:"What is the design gap?",
+     options:["None, manual fixes are fine","No reversal mechanism for an action-taking agent; reversibility or an approval gate must be designed in before launch","The agent should run more often","The team needs a bigger model"],
+     answer:1,
+     why:"An action-taking agent without a reversal path is a liability. Either the action must be reversible by design, or an approval gate must precede the irreversible step. 'Fix it manually later' does not scale and is not a control."}}
+  ]}
+];
+
+const BANNER =
+" ███████╗██╗██╗     ███████╗██╗██╗      █████╗ \n"+
+" ██╔════╝██║██║     ██╔════╝██║██║     ██╔══██╗\n"+
+" ███████╗██║██║     ███████╗██║██║     ███████║\n"+
+" ╚════██║██║██║     ╚════██║██║██║     ██╔══██║\n"+
+" ███████║██║███████╗███████║██║███████╗██║  ██║\n"+
+" ╚══════╝╚═╝╚══════╝╚══════╝╚═╝╚══════╝╚═╝  ╚═╝";
+
+/* ---------- shared storage + helpers ---------- */
+const store=(()=>{let mem={};try{localStorage.setItem('__t','1');localStorage.removeItem('__t');
+  return{g:k=>localStorage.getItem(k),s:(k,v)=>localStorage.setItem(k,v),d:k=>localStorage.removeItem(k)};}
+  catch(e){return{g:k=>mem[k]??null,s:(k,v)=>mem[k]=v,d:k=>delete mem[k]};}})();
+const KEY='silsila_tutor';
+let done=(()=>{try{return JSON.parse(store.g(KEY)||'{}');}catch(e){return{};}})();
+const save=()=>store.s(KEY,JSON.stringify(done));
+const lid=(t,l)=>t+'-'+l;
+/* ---- quiz option shuffling (runtime, re-rolled each lesson open) ---- */
+let QV={}; // cache: 'ti-li' -> {options:[...], answer:int, raw:[origIndex...]}
+function shuffleQuiz(ti,li){
+  const q=CURRICULUM[ti].lessons[li].quiz; if(!q) return null;
+  const idx=q.options.map((_,i)=>i);
+  for(let i=idx.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[idx[i],idx[j]]=[idx[j],idx[i]];}
+  const options=idx.map(i=>q.options[i]);
+  const answer=idx.indexOf(q.answer);
+  return {options,answer,raw:idx};
+}
+function quizView(ti,li,reroll){const k=lid(ti,li);
+  if(reroll||!QV[k])QV[k]=shuffleQuiz(ti,li);
+  return QV[k];}
+const total=()=>CURRICULUM.reduce((a,t)=>a+t.lessons.length,0);
+const dcount=()=>Object.values(done).filter(Boolean).length;
+const tdone=ti=>CURRICULUM[ti].lessons.filter((_,li)=>done[lid(ti,li)]).length;
+function progbar(p,w=14){const f=Math.round(p/100*w);return '█'.repeat(f)+'░'.repeat(w-f);}
+function syncHeaders(){const t=total(),pct=Math.round(dcount()/t*100);
+  const rm=document.getElementById('rProgMini');if(rm)rm.innerHTML=`<b>${dcount()}</b> / ${t} lessons`;
+  const mp=document.getElementById('mProg');if(mp)mp.textContent=dcount()+'/'+t;
+  const mc=document.getElementById('mPct');if(mc)mc.textContent=pct+'%';}
+
+/* ---------- mode switch ---------- */
+let MODE='reader',tuiBooted=false;
+function setMode(m){MODE=m;document.body.setAttribute('data-mode',m);
+  document.querySelectorAll('#modeToggle button').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  if(m==='terminal'){ if(!tuiBooted){tuiBooted=true;T.boot();} else {T.goHome();}
+    if(window.innerWidth>700)document.getElementById('cmd').focus(); }
+  else { R.go('home'); }
+  syncHeaders();}
+
+/* =================== READER MODE =================== */
+const R={
+ view(){return document.getElementById('r-view');},
+ go(v,a,b){window.scrollTo(0,0);syncHeaders();
+   if(v==='home')return R.home();if(v==='tier')return R.tier(a);if(v==='lesson')return R.lesson(a,b);},
+ home(){
+   let tiers=CURRICULUM.map((t,i)=>{const d=tdone(i),n=t.lessons.length,pct=n?Math.round(d/n*100):0;
+     return `<div class="tier fade" style="animation-delay:${i*0.05}s" onclick="R.go('tier',${i})">
+       <div class="num">TIER ${t.num}</div><h3>${t.title}</h3><p>${t.blurb}</p>
+       <div class="pbar"><i style="width:${pct}%"></i></div>
+       <div class="foot"><span class="count">${d}/${n} complete</span><span class="count">${pct}%</span></div></div>`;}).join('');
+   R.view().innerHTML=`
+    <section class="hero">
+      <span class="tag">Silsila Labs · Interactive Curriculum</span>
+      <h1>Learn to build and govern <i>AI you can trust</i>.</h1>
+      <p>A hands-on, scenario-driven path from how these models actually work to shipping them responsibly in regulated environments.</p>
+      <div class="meta"><div><b>6</b>Tiers</div><div><b>${total()}</b>Lessons</div><div><b>${total()}</b>Scenario quizzes</div><div><b>Free</b>No sign-up</div></div>
+      <div><button class="cta" onclick="R.resume()">Start learning →</button>
+      <button class="cta ghost" onclick="document.getElementById('curriculum').scrollIntoView()">Browse tiers</button></div>
+    </section>
+    <div class="shead" id="curriculum"><h2>The Curriculum</h2><div class="rule"></div></div>
+    <div class="tiers">${tiers}</div><div style="height:30px"></div>`;},
+ resume(){for(let t=0;t<CURRICULUM.length;t++)for(let l=0;l<CURRICULUM[t].lessons.length;l++)
+   if(!done[lid(t,l)])return R.go('lesson',t,l);R.go('tier',0);},
+ tier(ti){const t=CURRICULUM[ti];
+   let rows=t.lessons.map((l,li)=>{const dn=done[lid(ti,li)];
+     return `<div class="lessrow fade" style="animation-delay:${li*0.05}s" onclick="R.go('lesson',${ti},${li})">
+       <div class="dot ${dn?'done':''}">${dn?'✓':li+1}</div><h4>${l.title}</h4><span class="est">${l.est||''}</span></div>`;}).join('');
+   R.view().innerHTML=`<button class="back" onclick="R.go('home')">← All tiers</button>
+     <div class="reader"><div class="crumb">Tier ${t.num}</div><h1>${t.title}</h1><p class="lead">${t.blurb}</p></div>
+     <div style="margin-top:24px">${rows}</div><div style="height:40px"></div>`;},
+ lesson(ti,li){const t=CURRICULUM[ti],l=t.lessons[li];
+   if(l.quiz)quizView(ti,li,true); // re-roll option order each time the lesson opens
+   let body=l.body.map(b=>{if(b.h)return `<h3>${b.h}</h3>`;if(b.p)return `<p>${b.p}</p>`;
+     if(b.list)return `<ul>${b.list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+     if(b.note)return `<div class="callout"><span class="tag">Key idea</span><p>${b.note}</p></div>`;return '';}).join('');
+   R.view().innerHTML=`<button class="back" onclick="R.go('tier',${ti})">← ${t.title}</button>
+     <article class="reader fade"><div class="crumb">Tier ${t.num} · Lesson ${li+1} of ${t.lessons.length}</div>
+       <h1>${l.title}</h1><p class="lead">${l.lead||''}</p><div class="body">${body}</div>
+       ${l.quiz?R.quiz(ti,li,l.quiz):''}</article>
+     <div class="navrow">${R.prev(ti,li)}${R.next(ti,li)}</div>`;},
+ quiz(ti,li,q){const v=quizView(ti,li);return `<div class="quiz"><span class="tag">Scenario Check</span>
+   <div class="scenario"><p>${q.scenario}</p></div><div class="q">${q.q}</div>
+   <div id="r-opts">${v.options.map((o,i)=>`<button class="opt" onclick="R.answer(${ti},${li},${i})"><span class="k">${String.fromCharCode(65+i)}</span>${o}</button>`).join('')}</div>
+   <div id="r-explain"></div></div>`;},
+ answer(ti,li,choice){const q=CURRICULUM[ti].lessons[li].quiz,v=quizView(ti,li);
+   document.querySelectorAll('#r-opts .opt').forEach((o,i)=>{o.disabled=true;
+     if(i===v.answer)o.classList.add('correct');if(i===choice&&choice!==v.answer)o.classList.add('wrong');});
+   const ok=choice===v.answer;
+   document.getElementById('r-explain').innerHTML=`<div class="explain ${ok?'ok':'miss'}"><b>${ok?'Correct':'Not quite'}</b><p>${q.why}</p></div>`;
+   done[lid(ti,li)]=true;save();syncHeaders();},
+ prev(ti,li){let p=ti,q=li-1;if(q<0){p=ti-1;q=p>=0?CURRICULUM[p].lessons.length-1:-1;}
+   if(p<0)return `<span></span>`;return `<button class="cta ghost" onclick="R.go('lesson',${p},${q})">← Previous</button>`;},
+ next(ti,li){let p=ti,q=li+1;if(q>=CURRICULUM[ti].lessons.length){p=ti+1;q=0;}
+   if(p>=CURRICULUM.length)return `<button class="cta" onclick="R.go('home')">Finish ✓</button>`;
+   return `<button class="cta" onclick="R.go('lesson',${p},${q})">Next lesson →</button>`;},
+ resetAll(){if(confirm('Reset all lesson progress?')){done={};store.d(KEY);R.go('home');syncHeaders();}}
+};
+
+/* =================== TERMINAL MODE =================== */
+let S={view:'home',ti:0,li:0,cur:0,answered:null};
+const T={
+ view(){return document.getElementById('t-view');},
+ st(l,r){document.getElementById('stLeft').textContent=l;if(r!==undefined)document.getElementById('stRight').textContent=r;},
+ path(p){document.getElementById('ps1path').textContent=p;},
+ render(){syncHeaders();if(S.view==='home')return T.home();if(S.view==='tier')return T.tier();
+   if(S.view==='lesson')return T.lesson();if(S.view==='help')return T.help();},
+ home(){T.path('~');T.st('HOME','1-6 open tier · ↑↓ enter · help');
+   let rows=CURRICULUM.map((t,i)=>{const d=tdone(i),n=t.lessons.length,p=Math.round(d/n*100);
+     return `<div class="row ${S.cur===i?'active':''}" onclick="T.pick(${i})">
+       <span class="num">[${i+1}]</span><span class="title">${t.title}</span>
+       <span class="bar">${progbar(p)}</span><span class="pct">${String(p).padStart(3)}%</span></div>`;}).join('');
+   T.view().innerHTML=`<div class="banner">${BANNER}</div>
+     <div class="sub">AI TUTOR · INTERACTIVE CURRICULUM · v1.0</div>
+     <div class="panel" style="margin-top:18px"><span class="legend">SYSTEM</span>
+       <div class="sys">Loaded ${CURRICULUM.length} tiers / ${total()} lessons / ${total()} scenario checks.</div>
+       <div class="dimt">author ......... Faraz Fookeer · Silsila Labs</div>
+       <div class="dimt">Select a tier to begin. Progress is saved locally on this machine.</div></div>
+     <div class="panel"><span class="legend">TIERS</span>${rows}</div>
+     <div class="hint">commands: <kbd>1</kbd>-<kbd>6</kbd> open · <kbd>resume</kbd> · <kbd>reset</kbd> · <kbd>help</kbd></div>`;
+   T.scroll();},
+ tier(){const t=CURRICULUM[S.ti];T.path('~/tier-'+t.num);T.st('TIER '+t.num,'1-'+t.lessons.length+' · b back · ↑↓ enter');
+   let rows=t.lessons.map((l,li)=>{const dn=done[lid(S.ti,li)];
+     return `<div class="row ${S.cur===li?'active':''}" onclick="T.open(${li})">
+       <span class="chk">${dn?'[✓]':'[ ]'}</span><span class="num">${String(li+1).padStart(2,'0')}</span>
+       <span class="title">${l.title}</span><span class="meta">${l.est||''}</span></div>`;}).join('');
+   T.view().innerHTML=`<div class="panel"><span class="legend">TIER ${t.num} · ${t.title.toUpperCase()}</span>
+     <div class="lead">${t.blurb}</div>${rows}</div>
+     <div class="hint">commands: <kbd>1</kbd>-<kbd>${t.lessons.length}</kbd> open · <kbd>b</kbd> back · <kbd>home</kbd></div>`;T.scroll();},
+ lesson(){const t=CURRICULUM[S.ti],l=t.lessons[S.li];T.path('~/tier-'+t.num+'/'+String(S.li+1).padStart(2,'0'));
+   T.st('LESSON '+(S.li+1)+'/'+t.lessons.length,'a-d answer · n next · p prev · b back');
+   let body=l.body.map(b=>{if(b.h)return `<h3>${b.h}</h3>`;if(b.p)return `<p>${b.p}</p>`;
+     if(b.list)return `<ul>${b.list.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+     if(b.note)return `<div class="note">${b.note}</div>`;return '';}).join('');
+   let quiz='';if(l.quiz){const q=l.quiz,v=quizView(S.ti,S.li),ans=S.answered;
+     quiz=`<div class="panel"><span class="legend">SCENARIO CHECK</span>
+       <div class="scn">${q.scenario}</div><div class="q">${q.q}</div>
+       ${v.options.map((o,i)=>{let cls='opt';if(ans!==null){cls+=' lock';if(i===v.answer)cls+=' correct';if(i===ans&&ans!==v.answer)cls+=' wrong';}
+         return `<div class="${cls}" onclick="T.answer(${i})"><span class="k">[${String.fromCharCode(97+i)}]</span><span>${o}</span></div>`;}).join('')}
+       ${ans!==null?`<div class="verdict ${ans===v.answer?'':'miss'}"><b>${ans===v.answer?'✓ CORRECT':'✗ NOT QUITE'}</b><p>${q.why}</p></div>`
+         :`<div class="hint">answer with <kbd>a</kbd> <kbd>b</kbd> <kbd>c</kbd> <kbd>d</kbd> or tap an option</div>`}</div>`;}
+   T.view().innerHTML=`<div class="panel"><span class="legend">TIER ${t.num} · LESSON ${S.li+1}/${t.lessons.length}</span>
+     <div class="gold" style="font-weight:700;font-size:16px;margin-bottom:2px">${l.title}</div>
+     <div class="lead">${l.lead||''}</div><div class="body">${body}</div></div>${quiz}
+     <div class="hint"><kbd>n</kbd> next · <kbd>p</kbd> prev · <kbd>b</kbd> tier · <kbd>home</kbd></div>`;T.view().scrollTop=0;},
+ help(){T.path('~/help');T.st('HELP','b back');
+   T.view().innerHTML=`<div class="panel"><span class="legend">HELP · COMMANDS</span><div class="body">
+     <h3>Navigation</h3><ul><li><code>1</code>..<code>9</code> open the numbered tier or lesson</li>
+     <li><code>resume</code> jump to your next unfinished lesson</li><li><code>b</code> / <code>back</code> go up one level</li>
+     <li><code>home</code> return to the tier list</li></ul>
+     <h3>Inside a lesson</h3><ul><li><code>a</code> <code>b</code> <code>c</code> <code>d</code> answer the scenario check</li>
+     <li><code>n</code> / <code>next</code>, <code>p</code> / <code>prev</code></li></ul>
+     <h3>System</h3><ul><li><code>reset</code> clear all progress</li><li><code>help</code> / <code>?</code> this screen</li></ul>
+     <div class="note">Mouse / tap and arrow keys + Enter also work. Use the toggle up top to switch to Reader mode.</div>
+     </div></div><div class="hint"><kbd>b</kbd> to go back</div>`;},
+ scroll(){const el=T.view().querySelector('.row.active');if(el)el.scrollIntoView({block:'nearest'});},
+ pick(i){if(S.view==='home'){S.ti=i;S.view='tier';S.cur=0;T.render();}else if(S.view==='tier')T.open(i);},
+ open(li){S.li=li;S.view='lesson';S.answered=null;if(CURRICULUM[S.ti].lessons[li].quiz)quizView(S.ti,li,true);T.render();},
+ answer(i){if(S.answered!==null)return;const v=quizView(S.ti,S.li);
+   S.answered=i;done[lid(S.ti,S.li)]=true;save();T.render();T.st(i===v.answer?'✓ CORRECT':'✗ NOT QUITE');},
+ nextL(){let t=S.ti,l=S.li+1;if(l>=CURRICULUM[t].lessons.length){t++;l=0;}
+   if(t>=CURRICULUM.length){S.view='home';S.cur=0;T.render();T.st('CURRICULUM COMPLETE');return;}
+   S.ti=t;S.li=l;S.answered=null;T.render();},
+ prevL(){let t=S.ti,l=S.li-1;if(l<0){t--;if(t<0)return;l=CURRICULUM[t].lessons.length-1;}
+   S.ti=t;S.li=l;S.answered=null;T.render();},
+ goHome(){S.view='home';S.cur=0;T.render();},
+ back(){if(S.view==='lesson'){S.view='tier';S.cur=S.li;T.render();}
+   else if(S.view==='tier'||S.view==='help')T.goHome();},
+ resume(){for(let t=0;t<CURRICULUM.length;t++)for(let l=0;l<CURRICULUM[t].lessons.length;l++)
+   if(!done[lid(t,l)]){S.ti=t;T.open(l);return;}T.goHome();},
+ reset(){done={};store.d(KEY);T.goHome();T.st('PROGRESS RESET');},
+ exec(raw){const c=raw.trim().toLowerCase();if(!c)return;
+   if(['help','?','h'].includes(c))return (S.view='help',T.render());
+   if(['home','cd ~','cd'].includes(c))return T.goHome();
+   if(['back','b','..','cd ..'].includes(c))return T.back();
+   if(c==='reset')return T.reset();
+   if(['resume','continue'].includes(c))return T.resume();
+   if(['ls','list','dir'].includes(c))return;
+   if(S.view==='lesson'){if(['n','next'].includes(c))return T.nextL();
+     if(['p','prev','previous'].includes(c))return T.prevL();
+     if(/^[a-d]$/.test(c)){const q=CURRICULUM[S.ti].lessons[S.li].quiz;
+       if(q&&'abcd'.indexOf(c)<q.options.length)return T.answer('abcd'.indexOf(c));}}
+   if(/^\d+$/.test(c)){const n=parseInt(c,10)-1;
+     if(S.view==='home'&&n>=0&&n<CURRICULUM.length){S.ti=n;S.view='tier';S.cur=0;return T.render();}
+     if(S.view==='tier'&&n>=0&&n<CURRICULUM[S.ti].lessons.length)return T.open(n);}
+   T.st("? unknown: "+c);},
+ boot(){const lines=[{t:"silsila-tutor boot loader v1.0",c:"d"},{t:"session: faraz.fookeer",c:"d"},
+   {t:"initialising curriculum ...... ok",c:""},{t:"mounting "+total()+" lessons / "+CURRICULUM.length+" tiers ...... ok",c:""},
+   {t:"loading scenario engine ...... ok",c:""},{t:"restoring progress ("+dcount()+"/"+total()+") ...... ok",c:""},
+   {t:"",c:""},{t:"ready. launching interface_",c:"g"}];
+   let html='',i=0;S.view='boot';T.view().innerHTML='<div class="boot" id="boot"></div>';
+   const el=document.getElementById('boot');T.st('BOOTING','tap / any key to skip');
+   const tick=()=>{if(i>=lines.length){S.view='home';T.render();return;}
+     const ln=lines[i];html+=`<div class="${ln.c==='g'?'g':ln.c==='d'?'d':''}">${ln.t||'&nbsp;'}</div>`;
+     el.innerHTML=html+'<span class="cur g">▌</span>';i++;T._bt=setTimeout(tick,170);};tick();},
+ skip(){if(S.view==='boot'){clearTimeout(T._bt);S.view='home';T.render();}}
+};
+window.R=R;window.T=T;window.setMode=setMode;
+
+/* ---------- terminal keyboard ---------- */
+const cmd=document.getElementById('cmd');
+cmd.addEventListener('keydown',e=>{
+  if(MODE!=='terminal')return;
+  if(e.key==='Enter'){if(cmd.value.trim()===''&&(S.view==='home'||S.view==='tier')){T.pick(S.cur);}else{T.exec(cmd.value);}cmd.value='';return;}
+  if((e.key==='ArrowDown'||e.key==='ArrowUp')&&(S.view==='home'||S.view==='tier')){e.preventDefault();
+    const len=S.view==='home'?CURRICULUM.length:CURRICULUM[S.ti].lessons.length;
+    S.cur=(S.cur+(e.key==='ArrowDown'?1:-1)+len)%len;T.render();}
+});
+document.addEventListener('keydown',e=>{if(MODE!=='terminal')return;if(S.view==='boot')T.skip();
+  if(document.activeElement!==cmd&&(e.key==='ArrowDown'||e.key==='ArrowUp'))cmd.focus();});
+document.getElementById('t-view').addEventListener('click',()=>{if(MODE==='terminal'&&S.view==='boot')T.skip();});
+window.addEventListener('click',()=>{if(MODE==='terminal'&&window.innerWidth>700)cmd.focus();});
+
+/* ---------- init ---------- */
+R.go('home');
+syncHeaders();
+</script>
+</body>
+</html>

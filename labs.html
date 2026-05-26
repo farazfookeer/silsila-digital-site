@@ -480,6 +480,44 @@
 
         <div class="products">
 
+            <!-- REPOAGENT -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">RepoAgent &mdash; Funding Desk</div>
+                        <span class="product-port">:8000</span>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Autonomous repo order management for fixed-income portfolios.</div>
+                    <div class="product-desc">
+                        A multi-agent system that detects cash and security shortfalls across fixed-income
+                        portfolios (T+0 to T+2), then constructs, validates, and books the repo and reverse-repo
+                        trades that resolve them. The agents only trade when there's a problem to solve &mdash;
+                        every proposed trade traces to a specific shortfall on a specific settlement day. A
+                        deterministic Python engine does the maths; an adversarial Risk agent runs eight mandatory
+                        checks before anything books. Built for the Claude Code Hackathon 2026, drawing directly on
+                        20+ years in collateral and repo. <a href="https://youtu.be/npE3H5-1kQg" target="_blank" rel="noopener">Watch the 3-minute overview</a>
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; Anthropic SDK &middot; FastAPI (SSE) &middot; SQLite &middot; Next.js &middot; React
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Fixed-income agent</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">BYOK</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Control</div>
+                        <div class="product-meta-value muted">Autonomous or manual desk</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- WRAITH -->
             <div class="product">
                 <div class="product-main">
@@ -655,6 +693,114 @@
                 </div>
             </div>
 
+            <!-- CV-CREATOR -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">cv-creator</div>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Generate, review, and ATS-optimise CVs across regions and industries.</div>
+                    <div class="product-desc">
+                        A Claude Code skill with four modes from one entry point: create a CV, improve bullets,
+                        review against regional norms, or tailor to a job description. It separates regional
+                        archetypes (length, photo, sections, personal-detail rules) from industry overlays
+                        (section emphasis, must-have credentials, bullet patterns), so any region composes with
+                        any industry at fill time. Markdown source builds to PDF and DOCX via pandoc. Ships with
+                        five regions and seven industries in v1.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Claude Code skill &middot; Markdown &middot; pandoc &middot; XeLaTeX &middot; Bash
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Claude Code skill</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">Local / BYOK</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Interface</div>
+                        <div class="product-meta-value muted">Claude Code plugin</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COWORK STARTER PACK -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">Cowork Starter Pack</div>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">A no-code onboarding kit for Claude's Cowork, built for non-developers.</div>
+                    <div class="product-desc">
+                        Gets non-technical people productive with Cowork without writing code or touching settings.
+                        Download, unzip, attach the folder, paste one prompt &mdash; a bootstrap file then walks the
+                        user through setup. Includes a printable Ask-vs-Act card, a plain-English glossary, ten
+                        ranked copy-paste first tasks, a connector picker, a when-it-goes-wrong guide, and five
+                        ready-made project workspaces. The thesis: the skill to learn isn't perfect prompting, it's
+                        steering a confident assistant who occasionally needs correcting.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Format:</strong> Markdown guides &middot; printable PDF &middot; ready-made Cowork projects
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Onboarding kit</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Audience</div>
+                        <div class="product-meta-value">Non-developers</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">For</div>
+                        <div class="product-meta-value muted">Claude Cowork</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DATAPORT AI -->
+            <div class="product">
+                <div class="product-main">
+                    <div class="product-header">
+                        <div class="product-name">Dataport AI for Tableau</div>
+                        <span class="product-status status-shipped">Shipped</span>
+                    </div>
+                    <div class="product-tagline">Turn messy spreadsheets into Tableau-ready data with AI-generated insights.</div>
+                    <div class="product-desc">
+                        Drop in a CSV or Excel file and get back a cleaned Tableau extract, a categorised list of
+                        data stories, and a polished HTML report &mdash; no coding required. A four-stage pipeline
+                        profiles, cleanses, narrates, and exports: it detects types, missing values and outliers,
+                        fixes them with every decision logged, then has Claude turn the numbers into plain-English
+                        stories across eight categories (trends, anomalies, segments, and more), each mapped to a
+                        suggested Tableau viz. The audited cleansing trail makes it defensible in regulated settings.
+                    </div>
+                    <div class="product-stack">
+                        <strong>Stack:</strong> Python &middot; Textual TUI &middot; Anthropic SDK &middot; Tableau Hyper API &middot; pandas
+                    </div>
+                </div>
+                <div class="product-meta">
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Category</div>
+                        <div class="product-meta-value">Data tooling</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Model</div>
+                        <div class="product-meta-value">BYOK</div>
+                    </div>
+                    <div class="product-meta-row">
+                        <div class="product-meta-label">Interface</div>
+                        <div class="product-meta-value muted">TUI + CLI</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </section>
@@ -739,7 +885,12 @@
         </div>
         <div class="footer-bottom">
             <span>&copy; 2026 Silsila Digital Ltd. All rights reserved.</span>
-            <span>London, UK</span>
+            <span style="display:flex;align-items:center;gap:16px">
+                <a href="https://www.linkedin.com/in/farazfookeer/" target="_blank" rel="noopener" aria-label="Faraz Fookeer on LinkedIn" style="display:inline-flex;align-items:center;color:var(--ink-faint);transition:color 0.2s" onmouseover="this.style.color='var(--terracotta)'" onmouseout="this.style.color='var(--ink-faint)'">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.22.79 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+                </a>
+                <span>London, UK</span>
+            </span>
         </div>
     </div>
 </footer>
