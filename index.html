@@ -115,6 +115,22 @@
             font-weight: 500;
         }
 
+        .nav-est {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ink-faint);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .nav-est::before {
+            content: '·';
+            margin-right: 8px;
+            color: var(--rule);
+        }
+        @media (max-width: 600px) { .nav-est { display: none; } }
+
         .nav-links {
             display: flex;
             gap: 4px;
@@ -838,6 +854,7 @@
     <a href="/" class="nav-brand">
         <span class="nav-brand-name">silsila</span>
         <span class="nav-arabic">سلسلة</span>
+        <span class="nav-est">est. 2019</span>
     </a>
     <div class="nav-links">
         <a href="#about">About</a>
